@@ -31,9 +31,7 @@ import os
 
 #os.chdir("C:/Users/souarraoui2/Desktop/application_covid") 
 
-# Data au departement/region
-
-
+# SANTE PUBLIQUE : Data au departement/region
 url_data_covid = 'https://www.data.gouv.fr/fr/datasets/r/6fadff46-9efd-4c53-942a-54aca783c30c'
 data_covid = pd.read_csv(url_data_covid, sep = ';')
 
@@ -41,7 +39,20 @@ data_population = pd.read_csv("fr_pop_region.csv", sep = ';')
 
 correspondance_reg_dept = pd.read_csv("departements-region.csv", sep = ';',encoding='latin-1') 
 
-# Data cas signalés france 
+#### Correspondance entre fichier data au dpt et les regions
+data_covid = data_covid.merge(correspondance_reg_dept, on='dep', how='left')
+
+#### Aggregation par region cas 
+#data_covid_region = data_covid.groupby(['jour', 'region_name'])['incid_hosp', 'incid_dc', 'incid_rad','incid_rea'].apply(sum).reset_index()
+data_covid_region = data_covid.groupby(['jour', 'region_name'])['incid_hosp', 'incid_dc', 'incid_rad','incid_rea'].agg('sum').reset_index()
+
+
+#### Ajout de la population générale
+data_covid_region = data_covid_region.merge(data_population, on = 'region_name', how = 'left')
+
+
+
+# CORONA STAT FRANCE : Data cas signalés france 
 url_cas_france = 'https://www.coronavirus-statistiques.com/corostats/openstats/open_stats_coronavirus.csv'
 data_cas_france = pd.read_csv(url_cas_france, sep = ';') 
 
@@ -54,18 +65,6 @@ data_cas_france = data_cas_france[data_cas_france['nom'] == 'france'] #filtre su
 data_cas_france = data_cas_france[['date' , 'cas']]
 data_cas_france = data_cas_france.rename(columns ={'date' : 'jour'})
 data_cas_france['jour'] = pd.to_datetime(data_cas_france['jour'] , format="%Y/%m/%d")
-
-
-# Correspondance entre fichier data au dpt et les regions
-data_covid = data_covid.merge(correspondance_reg_dept, on='dep', how='left')
-
-# Aggregation par region cas 
-#data_covid_region = data_covid.groupby(['jour', 'region_name'])['incid_hosp', 'incid_dc', 'incid_rad','incid_rea'].apply(sum).reset_index()
-data_covid_region = data_covid.groupby(['jour', 'region_name'])['incid_hosp', 'incid_dc', 'incid_rad','incid_rea'].agg('sum').reset_index()
-
-
-# Ajout de la population générale
-data_covid_region = data_covid_region.merge(data_population, on = 'region_name', how = 'left')
 
 
 
@@ -471,7 +470,7 @@ app.layout = html.Div(
                         html.H1(children = "Dans le cadre de notre Master 2 portant la mention \"Data Science pour la santé\", nous avons mobilisé\
                                             le maximum de nos savoirs et savoir-faire dans différentes disciplines enseignées. Ce projet porte sur \
                                             l'épidémie du Covid-19. Nous avons utilisé pour ce travail différentes sources de données nous vous proposons\
-                                            à travers ce dashboard une visualisation de la donnée permattant de suivre l'évolution de la pandémie sur \
+                                            à travers ce dashboard une visualisation de la donnée permettant de suivre l'évolution de la pandémie sur \
                                             le territoire français. Chaque onglet de ce dashboard porte des indicateurs et un maillage\
                                             géographique variable. Bonne lecture.",
                                            style={
@@ -482,6 +481,13 @@ app.layout = html.Div(
                                             },
                                             className='twelve columns',
                                             ),
+                        html.Div([html.Span('.',
+                             style={'color': colors['background'],'fontSize': 40
+                             }),
+                       
+                         ],className='twelve columns'
+                         ),
+
                        
                         ]),
                                 
@@ -644,7 +650,7 @@ app.layout = html.Div(
     
     
          html.Div([html.Span('.',
-                             style={'color': colors['text'],
+                             style={'color': colors['background'],
                              }),
                        
                          ],className='twelve columns'
@@ -670,6 +676,13 @@ app.layout = html.Div(
                     )
                 ], className='twelve columns'
                 ),
+    
+    html.Div([html.Span('.',
+                             style={'color': colors['background'],'fontSize': 40
+                             }),
+                       
+                         ],className='twelve columns'
+                         ),
 
     
                     ])
@@ -790,13 +803,20 @@ app.layout = html.Div(
     dcc.Dropdown(
         id='region_dropdown', value = 'National',
         options=[{'label': i, 'value': i} for i in list(data_google_region.sub_region_1.unique())],
-        style = {'fontSize':'16px','fontFamily':'Helvetica','fontWeight':'bold','border': '2px solid #1b3147','padding':'1px','backgroundColor':'#1b3147','marginTop':'4px','marginRight':'2px'},
-        #clearable=True,
+        #style = {'fontSize':'16px','fontFamily':'Helvetica','fontWeight':'bold','border': '2px solid #1b3147','padding':'1px','backgroundColor':'#1b3147','marginTop':'4px','marginRight':'2px'},
+        style = {'fontSize':'18px','fontFamily':'Helvetica','fontWeight':'bold','border': '2px solid #1b3147','padding':'1px','marginTop':'4px','marginRight':'2px'},
     ),
-                         html.Div(
+    html.Div(
                 id='cx1'
                 ), 
     ],className='twelve columns'),
+                                 
+    html.Div([html.Span('.',
+                             style={'color': colors['background'],'fontSize': 70
+                             }),
+                       
+                         ],className='twelve columns'
+                         ),
                         
     
  
@@ -873,6 +893,7 @@ def update_figure(value):
                     "layout": {
                         'title': 'Suivi journalier des déplacements des français par région',
                         "yaxis": {"title": "Evolution (en % )"},
+                        "xaxis.label": {"color" : "#ffffff"},
                         'plot_bgcolor': colors['background'],
                         'paper_bgcolor': colors['background'],
                     },
